@@ -192,7 +192,7 @@ app.get('/new/:event', function (req, res, next) {
 
 
                 } else {
-                    res.status(401).send(createHTML('assets/error.html', { "Msg": 'Invalid ID. Param value = '+req.params.event+'. Rowcount = '+String(recordset.rowCount) }));
+                    res.status(401).send(createHTML('assets/error.html', { "Msg": "Invalid ID"}));
                     
                 }
             });
