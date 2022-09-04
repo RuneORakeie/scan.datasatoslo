@@ -192,7 +192,8 @@ app.get('/new/:event', function (req, res, next) {
 
 
                 } else {
-                    res.status(401).send(createHTML('assets/error.html', { "Msg": "Invalid ID." }));
+                    res.status(401).send(createHTML('assets/error.html', { "Msg": "Invalid ID."+sqlQuery.errMsg }));
+                    
                 }
             });
     } catch(err) {
