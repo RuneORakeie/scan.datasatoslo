@@ -59,7 +59,7 @@ var connectionString = {
                dateFormat    : 'ymd',
                isolationLevel: IsolationLevels.SERIALIZABLE,
                connectionIsolationLevel : IsolationLevels.SERIALIZABLE,
-               appName       : 'scan.datasatsto.se' // host name of the web server
+               appName       : 'scan.datasaturday.no' // host name of the web server
         }
     };
 
@@ -159,7 +159,7 @@ function newRegistration (req, res, next) {
     try {
         sqlQuery(connectionString, 'EXECUTE Scan.New_Identity @Event=@Event, @ID=@ID;',
         [{ "name": 'Event', "type": Types.VarChar, "value": decodeURI(req.params.event) },
-         { "name": 'ID',    "type": Types.VarChar,  "value": manualRegistrationId        }],
+         { "name": 'ID',    "type": Types.BigInt,  "value": manualRegistrationId        }],
 
             async function(recordset) {
                 if (recordset) {
@@ -226,7 +226,7 @@ app.get('/setup', function (req, res, next) {
 
     if (req.query.id) {
         sqlQuery(connectionString, 'EXECUTE Scan.Get_Codes @ID=@ID;',
-        [   { "name": 'ID', "type": Types.VarChar, "value": parseInt(req.query.id) }],
+        [   { "name": 'ID', "type": Types.BigInt, "value": parseInt(req.query.id) }],
 
         async function(recordset) {
             var codes='';
@@ -289,7 +289,7 @@ function newScan(req, res, next) {
         connectionString.options.appName=req.headers.host;
 
         sqlQuery(connectionString, 'EXECUTE Scan.New_Scan @ID=@ID, @ReferenceCode=@ReferenceCode;',
-            [   { "name": 'ID', "type": Types.VarChar, "value": parseInt(req.params.id) },
+            [   { "name": 'ID', "type": Types.BigInt, "value": parseInt(req.params.id) },
                 { "name": 'ReferenceCode', "type": Types.VarChar, "value": referenceCode }],
 
             async function(recordset) {
