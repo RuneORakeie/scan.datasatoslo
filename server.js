@@ -300,7 +300,7 @@ function newScan(req, res, next) {
                     res.status(200).send(createHTML('assets/ok.html', { "Code": (referenceCode || '(No exhibitor code)') }));
                     return;
                 } else {
-                    res.status(500).send(createHTML('assets/error.html', { "Msg": recordset.errMsg + "That code didn't look right." }));
+                    res.status(500).send(createHTML('assets/error.html', { "Msg": "That code didn't look right." }));
                     return;
                 }
             });
