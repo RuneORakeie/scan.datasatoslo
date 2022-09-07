@@ -301,7 +301,7 @@ function newScan(req, res, next) {
                     return;
                 } else {
                     
-                    res.status(500).send(createHTML('assets/error.html', { "Msg": recordset.connectionError + "That code didn't look right." }));
+                    res.status(500).send(createHTML('assets/error.html', { "Msg": sqlQuery.connectionError + ".." + sqlQuery.connectionGeneralError + ".." + "That code didn't look right." }));
                     return;
                 }
             });
