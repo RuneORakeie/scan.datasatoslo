@@ -22,7 +22,9 @@
         // Start click/touch:
         function beginClick(e) {
             // Some browsers fire both the mousedown AND the touchstart events,
-            // which would fire this event twice 
+            // which would fire this event twice
+            e.preventDefault();
+
             if (!clicking) {
                 clicking=true;
                 timeoutHandle=setTimeout(longClick, longClickDelay, e.target);
