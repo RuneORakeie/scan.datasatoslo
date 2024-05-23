@@ -134,12 +134,17 @@ EXCEPT
 SELECT EventID, ReferenceCode
 FROM Scan.ReferenceCodes;
 
---- Add the user scan if the identity exists:
-INSERT INTO Scan.Scans (ID, Scanned, ReferenceCode, Note)
-OUTPUT inserted.ID
-SELECT @ID, SYSUTCDATETIME(), @ReferenceCode, @Note
-FROM Scan.Identities
-WHERE ID=@ID;
+BEGIN TRY;
+    --- Add the user scan if the identity exists:
+    INSERT INTO Scan.Scans (ID, Scanned, ReferenceCode, Note)
+    OUTPUT inserted.ID
+    SELECT @ID, SYSUTCDATETIME(), @ReferenceCode, @Note
+    FROM Scan.Identities
+    WHERE ID=@ID;
+END TRY
+BEGIN CATCH;
+    SELECT -1 AS [ID];
+END CATCH;
 
 GO
 
