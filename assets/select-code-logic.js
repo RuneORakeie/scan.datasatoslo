@@ -1,11 +1,11 @@
-    var clicking=false;
 
     window.onload = function hello() {
 
+        var longClickDelay=500;         // number of ms until it's a long-click.
+
         var timeoutHandle=0;
         var longClicked=false;
-
-        var longClickDelay=500;         // number of ms until it's a long-click.
+        var clicking=false;
 
         document.querySelectorAll('div.codes span.code').forEach(code => {
             // Desktop events:
@@ -34,6 +34,7 @@
 
         // If we've long-pressed:
         function longClick(code) {
+            clicking=false;
             longClicked=true;
 
             // Create a <form> with an <input>
