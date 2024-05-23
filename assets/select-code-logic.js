@@ -1,3 +1,4 @@
+    var clicking=false;
 
     window.onload = function hello() {
 
@@ -20,8 +21,13 @@
 
         // Start click/touch:
         function beginClick(e) {
-            timeoutHandle=setTimeout(longClick, longClickDelay, e.target);
-            longClicked=false;
+            // Some browsers fire both the mousedown AND the touchstart events,
+            // which would fire this event twice 
+            if (!clicking) {
+                clicking=true;
+                timeoutHandle=setTimeout(longClick, longClickDelay, e.target);
+                longClicked=false;
+            }
         }
 
 
@@ -56,13 +62,18 @@
 
 
 
-        // End of click/touch, but not long-press:
+        // End of click/touch
         function endClick(e) {
-            if (!longClicked) {
-                clearTimeout(timeoutHandle);
+            if (clicking) {
+                clicking=false;
 
-                // Just go to the URL we assigned to the button:
-                window.location.assign(e.target.getAttribute('xhref'));
+                // .. but not long-press:
+                if (!longClicked) {
+                    clearTimeout(timeoutHandle);
+
+                    // Just go to the URL we assigned to the button:
+                    window.location.assign(e.target.getAttribute('xhref'));
+                }
             }
         }
 
