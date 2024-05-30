@@ -123,6 +123,18 @@ AS
 
 SET NOCOUNT ON;
 
+IF ((SELECT Expires
+     FROM Scan.Events
+     WHERE EventID=(SELECT EventID
+                    FROM Scan.Identities
+                    WHERE ID=@ID)
+    )<=CAST(SYSDATETIME() AS date)) BEGIN;
+
+    SELECT -1 AS [ID];
+    THROW 50001, 'This event is no longer active', 1;
+    RETURN;
+END;
+
 --- Create the reference code if
 --- * the identity exists, and
 --- * the reference code doesn't already exist:
