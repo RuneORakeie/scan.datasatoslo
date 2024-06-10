@@ -110,7 +110,7 @@ app.get('/', function (req, res, next) {
   Get QR code PNG file
   ---------------------------------------------------------------------------*/
 
-app.get('/:dir/:id.png', function (req, res, next) {
+app.get('/:dir/:id([0-9]*).png', function (req, res, next) {
 
     httpHeaders(res);
 
@@ -142,7 +142,7 @@ app.get('/:dir/:id.png', function (req, res, next) {
   ---------------------------------------------------------------------------*/
 
   app.get('/new/:event', newRegistration);      // Generate an ID (default)
-  app.get('/new/:event/:id', newRegistration);  // Use an existing ID (suitable for simplifying integrations)
+  app.get('/new/:event/:id([0-9]*)', newRegistration);  // Use an existing ID (suitable for simplifying integrations)
 
 function newRegistration (req, res, next) {
     httpHeaders(res);
@@ -462,6 +462,8 @@ app.get('/assets/:asset', function (req, res, next) {
             'x-sent': true
         }
     };
+
+    console.log(req.params.asset);
 
     res.sendFile(req.params.asset, options, function(err) {
         if (err) {
