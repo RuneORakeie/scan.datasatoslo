@@ -277,6 +277,11 @@ app.get('/:id([0-9]*)', newScan);
 
 function newScan(req, res, next) {
 
+    if (req.params.code.includes('favicon')) {
+        res.status(404).send('');
+        return;
+    }
+
     var referenceCode=decodeURI(req.params.code || '') || req.session.vendorCode || "";
     if (!referenceCode) {
         res.redirect('/setup?id='+parseInt(req.params.id));
