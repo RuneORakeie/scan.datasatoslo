@@ -277,9 +277,11 @@ app.get('/:id([0-9]*)', newScan);
 
 function newScan(req, res, next) {
 
-    if (req.params.code.includes('favicon')) {
-        res.status(404).send('');
-        return;
+    if (req.params.code) {
+        if (req.params.code.includes('favicon')) {
+            res.status(404).send('');
+            return;
+        }
     }
 
     var referenceCode=decodeURI(req.params.code || '') || req.session.vendorCode || "";
@@ -462,8 +464,6 @@ app.get('/assets/:asset', function (req, res, next) {
             'x-sent': true
         }
     };
-
-    console.log(req.params.asset);
 
     res.sendFile(req.params.asset, options, function(err) {
         if (err) {
