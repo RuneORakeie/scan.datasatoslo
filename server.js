@@ -628,7 +628,7 @@ function httpHeaders(res) {
     res.header('Strict-Transport-Security', hstsPreloadHeader); // HTTP Strict Transport Security with preload
 */
     // Limits use of external script/css/image resources
-    res.header('Content-Security-Policy', "default-src 'self'; style-src 'self' fonts.googleapis.com; script-src 'self'; font-src fonts.gstatic.com");
+    res.header('Content-Security-Policy', "default-src 'self'; style-src 'self' fonts.googleapis.com; script-src 'self' https://static.cloudflareinsights.com; font-src fonts.gstatic.com");
 
     // Don't allow this site to be embedded in a frame; helps mitigate clickjacking attacks
     res.header('X-Frame-Options', 'sameorigin');
