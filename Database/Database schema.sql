@@ -162,16 +162,42 @@ GO
 -------------------------------------------------------------------------------
 
 CREATE OR ALTER PROCEDURE Scan.Get_Scans
-    @EventSecret        uniqueidentifier
+    @EventSecret        uniqueidentifier,
+    @ReferenceCode      varchar(20) = NULL,
+    @Unique             BIT         = 0
 AS
 
-SELECT i.ID, s.Scanned, s.ReferenceCode AS Code
-FROM Scan.Events AS e
-INNER JOIN Scan.Identities AS i ON e.EventID=i.EventID
-LEFT JOIN Scan.Scans AS s ON i.ID=s.ID
-WHERE e.EventSecret=@EventSecret
-ORDER BY s.Scanned;
+IF @ReferenceCode IS NULL
+BEGIN
+    SELECT i.ID, s.Scanned, s.ReferenceCode AS Code
+    FROM Scan.Events AS e
+    INNER JOIN Scan.Identities AS i ON e.EventID=i.EventID
+    LEFT JOIN Scan.Scans AS s ON i.ID=s.ID
+    WHERE e.EventSecret=@EventSecret
+    ORDER BY s.Scanned;
+END
+ELSE
+BEGIN
+    IF @Unique = 1
+    BEGIN
+        SELECT DISTINCT i.ID, s.ReferenceCode AS Code
+        FROM Scan.Events AS e
+        INNER JOIN Scan.Identities AS i ON e.EventID=i.EventID
+        LEFT JOIN Scan.Scans AS s ON i.ID=s.ID
+        WHERE e.EventSecret=@EventSecret and s.ReferenceCode = @ReferenceCode
+        ORDER BY i.ID;
+    END
+    ELSE
+    BEGIN
+        SELECT i.ID, s.Scanned, s.ReferenceCode AS Code
+        FROM Scan.Events AS e
+        INNER JOIN Scan.Identities AS i ON e.EventID=i.EventID
+        LEFT JOIN Scan.Scans AS s ON i.ID=s.ID
+        WHERE e.EventSecret=@EventSecret and s.ReferenceCode = @ReferenceCode
+        ORDER BY s.Scanned;
+    END
 
+END
 GO
 
 -------------------------------------------------------------------------------
