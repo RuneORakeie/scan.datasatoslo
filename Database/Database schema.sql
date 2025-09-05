@@ -187,7 +187,7 @@ CREATE OR ALTER PROCEDURE Scan.Get_Scans
 AS
 IF @ReferenceCode IS NULL
 BEGIN
-    SELECT i.ID, s.Scanned, s.ReferenceCode AS Code
+    SELECT i.ID, s.Scanned, s.ReferenceCode AS Code, s.Note
     FROM Scan.Events AS e
     INNER JOIN Scan.Identities AS i ON e.EventID=i.EventID
     LEFT JOIN Scan.Scans AS s ON i.ID=s.ID
@@ -198,7 +198,7 @@ ELSE
 BEGIN
     IF @Unique = 1
     BEGIN
-        SELECT DISTINCT i.ID, s.ReferenceCode AS Code
+        SELECT DISTINCT i.ID, s.ReferenceCode AS Code, s.Note
         FROM Scan.Events AS e
         INNER JOIN Scan.Identities AS i ON e.EventID=i.EventID
         LEFT JOIN Scan.Scans AS s ON i.ID=s.ID
@@ -207,7 +207,7 @@ BEGIN
     END
     ELSE
     BEGIN
-        SELECT i.ID, s.Scanned, s.ReferenceCode AS Code
+        SELECT i.ID, s.Scanned, s.ReferenceCode AS Code, s.Note
         FROM Scan.Events AS e
         INNER JOIN Scan.Identities AS i ON e.EventID=i.EventID
         LEFT JOIN Scan.Scans AS s ON i.ID=s.ID
@@ -235,7 +235,7 @@ FROM (
     WHERE e.EventSecret=@EventSecret
     AND (s.ReferenceCode=@ReferenceCode OR NULLIF(@ReferenceCode, '') IS NULL)
 ) AS sub
-ORDER BY NEWID();
+ORDER BY CHECKSUM(NEWID(), ID, SYSDATETIME());  -- Enhanced randomness
 
 GO
 

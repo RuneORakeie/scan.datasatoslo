@@ -7,7 +7,7 @@ Back in the day when we used to have SQL Saturdays, attendees would have QR code
 in exhibitor booths. Event organizers could download a database extract from the SQL Saturday site with all
 scans, and send that extract to each respective exhibitor.
 
-This is a framework to
+This is a framework to:
 - Create QR codes as PNG files, as well as inline HTML data objects
 - Register when a QR code is scanned
 - Associate a terminal (QR code scanner/smart phone) to a specific exhibitor
@@ -17,7 +17,8 @@ This is a framework to
 ## Privacy
 
 The solution works with integer identities, so it does not contain any personally identifiable information.
-This means that you'll have to connect those IDs to your attendee records yourself.
+This means that you'll have to connect those IDs to your attendee records yourself, or use the Eventbrite
+integration to automatically retrieve attendee details.
 
 No IP addresses, locations, etc, are used or checked or stored, unless specifically entered in the note
 field by vendors.
@@ -30,6 +31,11 @@ extract reporting data if they don't have database access.
 You'll need:
 - A web server that runs NodeJS, for example IIS or Azure WebApps (recommended).
 - A SQL Server instance, any edition.
+
+If you are using Eventbrite as your ticketing platform you also need:
+- Create an API key (found under your Eventbrite Account settings/Developer Links/API Keys)
+- It is the "Private token" valkue in your API Key you will use for authentication when querying the Eventbrite API 
+- Create configuration file for export scripts (see Eventbrite integration section below)
 
 To set up:
 - Deploy the Git repository in the web root.
@@ -49,6 +55,80 @@ Environment variables:
 - dbpassword: Password
 
 **Note** The app currently only supports SQL Authentication.
+
+# Eventbrite Integration
+- Integrate with Eventbrite to retrieve full attendee details for raffle drawing
+- Export attendee scan data into csv format with attendee profile information for sharing with your sponsors. Data shared is first name, lastname, job title, company name and email address.
+
+To setup, you additionally need to run the following SQL scripts in you database:
+- Get_EventName.sql
+- Get_ReferenceCodes.sql
+
+## Configuration File
+
+Create a JSON configuration file for the export scripts:
+
+```json
+{
+    "database": {
+        "server": "your-db-server-name",
+        "name": "your-database-name", 
+        "login": "your-db-username",
+        "password": "your-db-password"
+    },
+    "eventbrite": {
+        "token": "your-eventbrite-oauth-token"
+    },
+    "event": {
+        "secret": "your-event-secret"
+    },
+    "output": {
+        "directory": "../AttendeeScanLists/"
+    }
+}
+```
+
+## Export Scripts
+
+### Export-Attendee-Scans.ps1
+
+PowerShell script that exports attendee scan data with full Eventbrite profile information.
+
+**Parameters:**
+- `EventId` (mandatory): The Eventbrite Event ID
+- `ConfigFilePath` (mandatory): Path to the JSON configuration file
+- `SponsorCode` (optional): Specific exhibitor/sponsor code. If omitted, all sponsors are processed
+
+**Examples:**
+```powershell
+# Export scans for a specific sponsor
+.\Export-Attendee-Scans.ps1 -EventId "123456789" -ConfigFilePath ".\config.json" -SponsorCode "Microsoft" -Verbose
+
+# Export scans for all sponsors
+.\Export-Attendee-Scans.ps1 -EventId "123456789" -ConfigFilePath ".\config.json" -Verbose
+```
+
+**Features:**
+- Retrieves unique scanned attendee IDs from the scanning database
+- Looks up full attendee details from Eventbrite API (name, email, company, job title)
+- Dynamically uses event name from database (spaces removed for filename)
+- Creates output directory if it doesn't exist
+- Exports to CSV format: `{EventName}-{SponsorCode}-AttendeeScans.csv`
+- Processes all sponsors when SponsorCode is omitted
+- Comprehensive error handling and verbose logging
+- Processing summary when handling multiple sponsors
+
+**Required Database Stored Procedures:**
+- `Scan.Get_Scans`: Retrieves scanned attendee data
+- `Scan.Get_Sponsors`: Returns list of all sponsors for an event (used when processing all sponsors)
+
+**Output CSV Columns:**
+- FirstName
+- LastName  
+- JobTitle
+- Company
+- Email
+- Note (from scan database)
 
 # API Reference
 
@@ -77,7 +157,7 @@ and it does not inherit persistent cookies from Safari, so this alternate workfl
 
 Not supported in the API.
 
-```
+```sql
 EXECUTE Scan.New_Event @Event;
 ```
 
@@ -94,8 +174,11 @@ not in a sequential or otherwise predictable manner, but you can opt to set an I
 This could be useful if you want to integrate with another system and want to inherit the
 ID from that data source.
 
+**Note:** When using Eventbrite integration, you should use the Eventbrite Attendee ID as the manual integer ID
+to maintain consistency between the scanning system and Eventbrite records.
+
 Return value:
-```
+```json
 { "id":"19380729426",
   "url":"https://www.example.com/19380729426",
   "imgsrc":"https://www.example.com/eventcode/19380729426.png",
@@ -146,17 +229,13 @@ Returns a JSON report of all identities, whether scanned or not. If the identity
 not scanned, the "Scanned" property is blank.
 
 Example:
-```
+```json
 [{"ID":"19380729426","Scanned":null,"Code":null},
  {"ID":"17560301726","Scanned":"2021-09-27T18:12:23.509Z","Code":null},
  {"ID":"17560301726","Scanned":"2021-09-27T18:12:26.852Z","Code":null},
- {"ID":"17560301726","Scanned":"2021-09-27T18:13:08.743Z","Code":null},
- {"ID":"17560301726","Scanned":"2021-09-27T18:13:17.322Z","Code":null},
- {"ID":"17560301726","Scanned":"2021-09-27T18:13:43.244Z","Code":null},
+ {"ID":"17560301726","Scanned":"2021-09-27T18:12:26.852Z","Code":"Microsoft","Note":"Interested in Azure solutions"},
  {"ID":"17560301726","Scanned":"2021-09-27T18:15:34.198Z","Code":"Exhibitor 1","Note":"Spoke about cloud monitoring."},
- {"ID":"17560301726","Scanned":"2021-09-27T18:15:39.511Z","Code":null},
  {"ID":"17560301726","Scanned":"2021-09-27T18:17:13.824Z","Code":"Exhibitor 2"},
- {"ID":"17560301726","Scanned":"2021-09-27T18:18:36.513Z","Code":"Exhibitor 2"},
  {"ID":"17560301726","Scanned":"2021-09-27T18:18:42.966Z","Code":"Lunch ticket"}]
 ```
 
@@ -176,15 +255,18 @@ from that vendor's scans.
 Evicts all events, identities and scans that have expired. By default, an event expires
 365 days after its creation, but this is configured in the Expires column of the Scan.Events table.
 
-# Example integration with Mailchimp
+
+# Workflow Integration
+
+## Example integration with Mailchimp
 
 ![Sample Mailchimp integration](https://raw.githubusercontent.com/strdco/scan.datasatsto.se/boss/Documentation/microsoft-flow-example.png)
 
-A sample integration would `GET https://scan.example.com/new/EventCode`
+A sample integration would `GET https://scan.example.com/new/EventCode/EventbriteAttendeeID`
 
 ... which returns
 
-```
+```json
 { "id":"19380729426",
   "url":"https://scan.example.com/19380729426",
   "imgsrc":"https://scan.example.com/eventcode/19380729426.png",
@@ -192,7 +274,7 @@ A sample integration would `GET https://scan.example.com/new/EventCode`
 ```
 
 You can parse the output as JSON with the following schema:
-```
+```json
 {
     "type": "object",
     "properties": {
@@ -221,7 +303,7 @@ URL:
 https://us5.api.mailchimp.com/3.0/lists/@{triggerOutputs()?['body/list_id']}/members/@{triggerOutputs()?['body/id']}?skip_merge_validation=true
 ```
 Request body:
-```
+```json
 {
   "merge_fields": {
     "SCANID": "@{body('Parse_JSON')?['id']}",
@@ -230,6 +312,30 @@ Request body:
 }
 ```
 Use basic authentication; anything goes in the username field, use your API key as the password.
+
+
+## Eventbrite Complete Attendee Data Export Workflow
+
+1. **Event Setup**: Create event in scanning system and note EventSecret
+2. **QR Code Generation**: Generate QR codes using Eventbrite Attendee IDs as manual IDs
+3. **Badge Integration**: Include QR codes on attendee badges
+4. **Scanning**: Exhibitors scan attendee QR codes during event
+5. **Data Export**: 
+   - Run export script for specific sponsors: `Export-Attendee-Scans.ps1 -EventId "123" -ConfigFilePath "config.json" -SponsorCode "Microsoft"`
+   - Or export all sponsor data: `Export-Attendee-Scans.ps1 -EventId "123" -ConfigFilePath "config.json"`
+6. **Deliverables**: Receive CSV files with complete attendee profiles for each sponsor
+
+## Benefits of Eventbrite Integration
+
+- **Complete Attendee Profiles**: No need for separate attendee data management
+- **Real-time Data**: Fresh attendee information directly from Eventbrite
+- **Automated Processing**: Batch export for all sponsors with single command
+- **Professional Output**: Clean CSV files ready for CRM import or follow-up campaigns
+- **Error Resilience**: Individual sponsor processing continues even if one fails
+- **Fair Raffle System**: Cryptographically secure random selection for prize drawings
+- **Privacy Controls**: Optional email inclusion with explicit consent flags
+- **Comprehensive Logging**: Detailed verbose output for troubleshooting and audit trails
+
 
 # Want to contribute?
 
